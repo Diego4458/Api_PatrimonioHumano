@@ -1,0 +1,84 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id             String  @id @default(auto()) @map("_id") @db.ObjectId
+  email          String  @unique
+  name           String
+  surname        String
+  passwordHash   String
+  emailCheckCode String?
+  isMailVerified Boolean @default(false)
+  role           String  @default("unidentified")
+  picHash        String? @default("default.jpg")
+}
+
+model Company {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  name        String        @unique
+  picHash     String       @default("default.jpg")
+  Files       FileDetails[]
+  Apointments Apointment[]
+  Contacts   Contact[]
+}
+
+model Contact {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  responsibleName String
+  email String?
+  phoneNumber String?
+  Address String
+  CompanyId String     @db.ObjectId
+  Company   Company @relation(fields: [CompanyId], references: [id])
+}
+
+model FileDetails {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  companyId    String     @db.ObjectId
+  company      Company    @relation(fields: [companyId], references: [id])
+  fileHash     String
+  fileName     String
+  fileType     String
+  size         Int        @default(0)
+  createDate   DateTime   @default(now())
+  updateDate   DateTime   @default(now())
+  ApointmentPresenceId String?      @db.ObjectId // Campo opcional
+  ApointmentPresence ApointmentPresence? @relation(fields: [ApointmentPresenceId], references: [id])
+  interviewClientId String?          @db.ObjectId
+  InterviewClient   InterviewClient? @relation(fields: [interviewClientId], references: [id])
+}
+
+model InterviewClient {
+  id          String               @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  document    String               @unique
+  createDate  DateTime             @default(now())
+  updateDate  DateTime             @default(now())
+  Apointments ApointmentPresence[]
+  fileDetails FileDetails[]
+}
+
+model Apointment {
+  id             String               @id @default(auto()) @map("_id") @db.ObjectId
+  apointmentDate DateTime             @default(now())
+  companyId      String               @db.ObjectId
+  company        Company              @relation(fields: [companyId], references: [id])
+  presences      ApointmentPresence[]
+}
+
+model ApointmentPresence {
+  id                String          @id @default(auto()) @map("_id") @db.ObjectId
+  interviewClientId String          @db.ObjectId
+  apointmentId      String          @db.ObjectId
+  wasPresent        String          @default("Não Informado")
+  testResult        String          @default("Não Avaliado")
+  Apointment        Apointment      @relation(fields: [apointmentId], references: [id])
+  Client            InterviewClient @relation(fields: [interviewClientId], references: [id])
+  fileDetails       FileDetails[]
+}
